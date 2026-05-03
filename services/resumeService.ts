@@ -1,9 +1,9 @@
 
-import { GoogleGenAI, Type, Schema } from "../lib/geminiClient";
+import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { supabase } from "../lib/supabaseClient";
 import { FullProfileData, EducationInformation, EmploymentHistory, CommunityEngagement, AlumniAttributes } from "../types";
 
-const API_KEY = undefined;
+const API_KEY = process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 // Models for Vision/Document tasks

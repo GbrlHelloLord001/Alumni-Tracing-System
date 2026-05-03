@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { LogOut, Users, Database, LayoutDashboard, ChevronRight, Menu, Bell, Search, Settings, CheckCircle, FileText, Globe, Inbox, Bot, AlertTriangle, GraduationCap, Shield, Sparkles, BrainCircuit } from 'lucide-react';
 import HomePage from './HomePage';
 import UserManagement from './UserManagement';
-import ApprovalWorkflow from './ApprovalWorkflow';
 import ReportsPage from './ReportsPage';
 import AlumniFetcherPage from './AlumniFetcherPage';
 import InboxPage from './InboxPage';
@@ -18,7 +17,7 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout }) => {
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'users' | 'approvals' | 'reports' | 'fetcher' | 'inbox' | 'paulo' | 'settings' | 'system' | 'import'>('dashboard');
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'users' | 'reports' | 'fetcher' | 'inbox' | 'paulo' | 'settings' | 'system' | 'import'>('dashboard');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogoutClick = () => {
@@ -144,7 +143,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout }) => {
                         </div>
                         <NavItem id="users" label="User Database" icon={Users} />
                         <NavItem id="import" label="Graduate Import" icon={Database} />
-                        <NavItem id="approvals" label="Approvals" icon={CheckCircle} />
                     </div>
 
                     {/* Section: Alumni & Placement Tools */}
@@ -183,7 +181,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout }) => {
                 {currentTab === 'paulo' && <PauloPage />}
                 {currentTab === 'users' && <UserManagement />}
                 {currentTab === 'import' && <GraduateImport />}
-                {currentTab === 'approvals' && <ApprovalWorkflow onUpdate={() => {}} />}
                 {currentTab === 'fetcher' && <AlumniFetcherPage />}
                 {currentTab === 'reports' && <ReportsPage adminId={admin.id} />}
                 {currentTab === 'system' && <SystemAdminPage />}

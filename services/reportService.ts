@@ -1,9 +1,9 @@
 
-import { GoogleGenAI, Schema, Type } from "../lib/geminiClient";
+import { GoogleGenAI, Schema, Type } from "@google/genai";
 import { supabase } from '../lib/supabaseClient';
 import { GeneratedReport, ReportConfig, ReportContent, ReportSection } from '../types';
 
-const API_KEY = undefined;
+const API_KEY = process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 const MODELS = ["gemini-flash-latest", "gemini-3.1-flash-lite-preview", "gemini-3-flash-preview"];

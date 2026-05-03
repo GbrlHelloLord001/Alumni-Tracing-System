@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { GraduationCap, Users, Search, RefreshCw, Trash2, Edit, X, Save, AlertTriangle, Loader2, CheckSquare, Square, Send, Mail, Clock, Settings, Calendar, ChevronDown, Check, Bell } from 'lucide-react';
+import { GraduationCap, Users, Search, RefreshCw, Trash2, Edit, X, Save, AlertTriangle, Loader2, CheckSquare, Square, Send, Mail, Clock, Settings, Calendar, ChevronDown, Check, Bell, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { Student } from '../types';
 import { sendFollowUpEmail, initEmailService } from '../services/emailService';
@@ -91,7 +91,6 @@ const CustomDropdown = ({
 };
 
 const UserManagement: React.FC = () => {
-  const [userType, setUserType] = useState<'graduating' | 'alumni'>('graduating');
   const [students, setStudents] = useState<Student[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -107,6 +106,7 @@ const UserManagement: React.FC = () => {
   // Modal States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   
   // Follow Up Modal State
   const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false);
@@ -232,29 +232,40 @@ const UserManagement: React.FC = () => {
     // Reset selection when refreshing or changing tabs
     setSelectedIds(new Set());
     
-    const table = userType === 'graduating' ? 'students' : 'alumni';
-    
-    const { data, error } = await supabase
-      .from(table)
-      .select('*, survey_responses(submitted_at)')
-      .order('submitted_at', { referencedTable: 'survey_responses', ascending: false })
-      .limit(1, { referencedTable: 'survey_responses' })
-      .order('last_name', { ascending: true });
+    // Fetch from both tables
+    const [studentsRes, alumniRes] = await Promise.all([
+      supabase
+        .from('students')
+        .select('*, survey_responses(submitted_at)')
+        .order('submitted_at', { referencedTable: 'survey_responses', ascending: false })
+        .limit(1, { referencedTable: 'survey_responses' }),
+      supabase
+        .from('alumni')
+        .select('*, survey_responses(submitted_at)')
+        .order('submitted_at', { referencedTable: 'survey_responses', ascending: false })
+        .limit(1, { referencedTable: 'survey_responses' })
+    ]);
 
-    if (!error && data) {
-      const normalizedData = data.map(item => ({
-        ...item,
-        program: normalizeProgram(item.program),
-        year_level: normalizeBatchYear(item.year_level)
-      }));
-      setStudents(normalizedData as Student[]);
-    }
+    let combinedData: any[] = [];
+    if (studentsRes.data) combinedData = [...combinedData, ...studentsRes.data.map(d => ({ ...d, table_source: 'students' }))];
+    if (alumniRes.data) combinedData = [...combinedData, ...alumniRes.data.map(d => ({ ...d, table_source: 'alumni' }))];
+
+    // Sort combined data by last_name
+    combinedData.sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
+
+    const normalizedData = combinedData.map(item => ({
+      ...item,
+      program: normalizeProgram(item.program),
+      year_level: normalizeBatchYear(item.year_level)
+    }));
+    
+    setStudents(normalizedData as Student[]);
     setLoadingUsers(false);
   };
 
   useEffect(() => {
     fetchUsers();
-  }, [userType]);
+  }, []);
 
   // --- Selection Handlers ---
   const handleSelectAll = () => {
@@ -285,6 +296,11 @@ const UserManagement: React.FC = () => {
   };
 
   // --- Action Handlers ---
+
+  const handleViewClick = (student: Student) => {
+    setSelectedUser(student);
+    setIsViewModalOpen(true);
+  };
 
   const handleEditClick = (student: Student) => {
     setSelectedUser(student);
@@ -364,7 +380,7 @@ const UserManagement: React.FC = () => {
     if (!selectedUser) return;
     setProcessing(true);
     try {
-      const table = userType === 'graduating' ? 'students' : 'alumni';
+      const table = selectedUser.table_source || 'students';
       
       const dataToSave = {
           ...editFormData,
@@ -395,7 +411,7 @@ const UserManagement: React.FC = () => {
     if (!selectedUser) return;
     setProcessing(true);
     try {
-      const table = userType === 'graduating' ? 'students' : 'alumni';
+      const table = selectedUser.table_source || 'students';
       const { error } = await supabase
         .from(table)
         .delete()
@@ -530,28 +546,8 @@ const UserManagement: React.FC = () => {
 
         {/* --- Tabs & Actions Row --- */}
         <div className="flex flex-col md:flex-row justify-between items-end gap-4 relative z-20">
-            {/* Tabs */}
+            {/* Tabs removed */}
             <div className="flex gap-4">
-                <button 
-                    onClick={() => setUserType('graduating')}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold transition-all border ${
-                        userType === 'graduating' 
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30 border-transparent' 
-                        : 'bg-white/40 border-white/60 text-slate-500 hover:bg-white/60 hover:text-slate-800'
-                    }`}
-                >
-                    <GraduationCap size={18} /> New Alumni
-                </button>
-                <button 
-                    onClick={() => setUserType('alumni')}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold transition-all border ${
-                        userType === 'alumni' 
-                        ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg shadow-purple-500/30 border-transparent' 
-                        : 'bg-white/40 border-white/60 text-slate-500 hover:bg-white/60 hover:text-slate-800'
-                    }`}
-                >
-                    <Users size={18} /> Old Alumni
-                </button>
             </div>
 
             {/* Right Side Actions */}
@@ -627,11 +623,20 @@ const UserManagement: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-md ${userType === 'graduating' ? 'bg-gradient-to-br from-green-400 to-emerald-500' : 'bg-gradient-to-br from-purple-400 to-indigo-500'}`}>
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-md ${student.table_source === 'students' ? 'bg-gradient-to-br from-green-400 to-emerald-500' : 'bg-gradient-to-br from-purple-400 to-indigo-500'}`}>
                                                 {student.first_name.charAt(0)}{student.last_name.charAt(0)}
                                             </div>
                                             <div>
-                                                <div className="font-bold text-slate-800">{student.last_name}, {student.first_name}</div>
+                                                <div className="font-bold text-slate-800 flex items-center gap-2">
+                                                    {student.last_name}, {student.first_name}
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleViewClick(student); }}
+                                                        className="p-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors opacity-0 group-hover:opacity-100"
+                                                        title="View Full Profile"
+                                                    >
+                                                        <Eye size={14} />
+                                                    </button>
+                                                </div>
                                                 <div className="text-xs font-mono text-slate-500 bg-white/50 px-1.5 py-0.5 rounded border border-white/50 inline-block mt-1">
                                                     {student.student_number}
                                                 </div>
@@ -945,6 +950,108 @@ const UserManagement: React.FC = () => {
                         <button onClick={() => setIsReminderModalOpen(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
                         <button onClick={confirmSendReminder} disabled={processing} className="flex-1 py-3 bg-amber-500 text-white font-bold rounded-xl shadow-lg hover:shadow-amber-200 hover:bg-amber-600 transition-all flex items-center justify-center gap-2">
                             {processing ? <Loader2 className="animate-spin" size={18} /> : 'Send Alert'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* --- View Modal --- */}
+        {isViewModalOpen && selectedUser && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsViewModalOpen(false)}></div>
+                <div className="bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl w-full max-w-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300 border border-white/50">
+                    {/* Header */}
+                    <div className="flex justify-between items-center px-8 py-6 border-b border-white/40 bg-slate-50/50">
+                        <div className="flex items-center gap-4">
+                            <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold text-white shadow-md ${selectedUser.table_source === 'students' ? 'bg-gradient-to-br from-green-400 to-emerald-500' : 'bg-gradient-to-br from-purple-400 to-indigo-500'}`}>
+                                {selectedUser.first_name.charAt(0)}{selectedUser.last_name.charAt(0)}
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-800">{selectedUser.first_name} {selectedUser.last_name}</h3>
+                                <span className="text-xs font-mono text-slate-500 bg-white/50 px-1.5 py-0.5 rounded border border-white/50 mt-1 inline-block">
+                                    {selectedUser.student_number}
+                                </span>
+                            </div>
+                        </div>
+                        <button onClick={() => setIsViewModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-full">
+                            <X size={24} />
+                        </button>
+                    </div>
+
+                    {/* Content Scrollable */}
+                    <div className="p-8 overflow-y-auto custom-scrollbar space-y-8">
+                        {/* Status section */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Record Origin</p>
+                                <p className="font-semibold text-slate-700 capitalize">{selectedUser.table_source || 'students'} Table</p>
+                            </div>
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Current Status</p>
+                                <p className="font-semibold text-slate-700">{selectedUser.enrollment_status === 'Alumni' ? 'Verified Alumni' : 'New Graduate'}</p>
+                            </div>
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Batch Year</p>
+                                <p className="font-semibold text-slate-700">{selectedUser.year_level}</p>
+                            </div>
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Gender</p>
+                                <p className="font-semibold text-slate-700">{selectedUser.gender || 'Not specified'}</p>
+                            </div>
+                        </div>
+
+                        {/* Personal Details */}
+                        <div>
+                            <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">Academic & Personal Info</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Program / Course</p>
+                                    <p className="font-medium text-slate-800 text-sm leading-relaxed">{selectedUser.program}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Birthdate</p>
+                                    <p className="font-medium text-slate-800 text-sm">{selectedUser.birthdate ? new Date(selectedUser.birthdate).toLocaleDateString() : 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Civil Status</p>
+                                    <p className="font-medium text-slate-800 text-sm capitalize">{selectedUser.civil_status || '-'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Physical Address</p>
+                                    <p className="font-medium text-slate-800 text-sm">{selectedUser.address || '-'}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Contact Details */}
+                        <div>
+                            <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">Contact Details</h4>
+                            <div className="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100/50">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider mb-0.5">Primary Email</p>
+                                        <p className="font-semibold text-indigo-900 text-sm flex items-center gap-2">
+                                            <Mail size={14} className="opacity-50" />
+                                            {selectedUser.email || 'N/A'}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider mb-0.5">Contact Number</p>
+                                        <p className="font-semibold text-indigo-900 text-sm">{selectedUser.contact_no || 'N/A'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="flex justify-end gap-3 px-8 py-5 border-t border-slate-100 bg-slate-50/50">
+                        <button 
+                            onClick={() => setIsViewModalOpen(false)}
+                            className="px-6 py-2.5 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors"
+                        >
+                            Close
                         </button>
                     </div>
                 </div>

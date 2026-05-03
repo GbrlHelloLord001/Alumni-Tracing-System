@@ -1,11 +1,11 @@
 
-import { GoogleGenAI, Schema, Type } from "../lib/geminiClient";
+import { GoogleGenAI, Schema, Type } from "@google/genai";
 import { supabase } from '../lib/supabaseClient';
 import { InternetAlumni, MiningConfig } from '../types';
 import { COURSES, normalizeProgram, normalizeBatchYear } from '../lib/normalization';
 
 const SERPER_KEY = "b3403d9cd24afa5ba9e3a1d7df38792db7c4caad";
-const API_KEY = undefined;
+const API_KEY = process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 const MODELS = ["gemini-flash-latest", "gemini-3.1-flash-lite-preview", "gemini-3-flash-preview"];

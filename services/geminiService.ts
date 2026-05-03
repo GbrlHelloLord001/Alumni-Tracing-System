@@ -1,6 +1,6 @@
 
-import { GoogleGenAI, Type } from "../lib/geminiClient";
-import type { Schema } from "../lib/geminiClient";
+import { GoogleGenAI, Type } from "@google/genai";
+import type { Schema } from "@google/genai";
 import { ExtractedData } from "../types";
 
 // Schema definition for the expected output
@@ -38,7 +38,7 @@ const idValidationSchema: Schema = {
 };
 
 // --- API KEY CONFIGURATION ---
-const API_KEY = undefined;
+const API_KEY = process.env.GEMINI_API_KEY;
 
 // Initialize with hardcoded key
 const ai = new GoogleGenAI({ apiKey: API_KEY });

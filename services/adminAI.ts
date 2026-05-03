@@ -1,9 +1,9 @@
 
-import { GoogleGenAI, Schema, Type } from "../lib/geminiClient";
+import { GoogleGenAI, Schema, Type } from "@google/genai";
 
 // Note: Using the API key provided in the context. 
 // In a production environment, this should be an environment variable.
-const API_KEY = undefined;
+const API_KEY = process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 // Models for Analytics (Using efficient Flash versions)

@@ -1,8 +1,8 @@
 
-import { GoogleGenAI } from "../lib/geminiClient";
+import { GoogleGenAI } from "@google/genai";
 import { supabase } from '../lib/supabaseClient';
 
-const API_KEY = undefined;
+const API_KEY = process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 // Using gemini-flash-latest for efficiency and high performance
