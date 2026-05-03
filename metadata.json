@@ -1,0 +1,8 @@
+{
+  "name": "Laguna University Alumni Tracer",
+  "description": "Smart Alumni Tracking System with AI-powered Registration from PDF forms.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
