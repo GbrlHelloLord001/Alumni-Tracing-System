@@ -1,7 +1,7 @@
 
 // ... existing imports ...
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Briefcase, AlertCircle, UserCheck, Target, Building2, BarChart3, PieChart as PieChartIcon, TrendingUp, Users, Filter, ChevronDown, RefreshCw, Award, X, MapPin, Printer, Calendar, Phone, BookOpen, Heart, Sparkles, Lightbulb, CheckCircle2, XCircle, Clock, ArrowUpRight, ArrowDownRight, Timer, LineChart as LineChartIcon, Gauge, Check, DollarSign, ToggleLeft, ToggleRight, HelpCircle } from 'lucide-react';
+import { Briefcase, AlertCircle, UserCheck, Target, Building2, BarChart3, PieChart as PieChartIcon, TrendingUp, Users, Filter, ChevronDown, RefreshCw, Award, X, MapPin, Printer, Calendar, Phone, BookOpen, Heart, Sparkles, Lightbulb, CheckCircle2, XCircle, Clock, ArrowUpRight, ArrowDownRight, Timer, LineChart as LineChartIcon, Gauge, Check, DollarSign, ToggleLeft, ToggleRight, HelpCircle, Info } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
@@ -12,6 +12,7 @@ import EducationAnalytics from './EducationAnalytics';
 import CommunityAnalytics from './CommunityAnalytics';
 import SkillsAnalytics from './SkillsAnalytics';
 import StatusDetailModal from './StatusDetailModal';
+import AlignmentDetailModal from './AlignmentDetailModal';
 import { COURSES, normalizeProgram, normalizeBatchYear } from '../lib/normalization';
 
 // --- Configuration ---
@@ -68,7 +69,7 @@ interface TrendStat {
 }
 
 // Master record type that combines employment info with user profile info
-interface MasterRecord {
+export interface MasterRecord {
     employment_status: string;
     industry?: string;
     unemployed_reasons?: string;
@@ -96,6 +97,7 @@ interface MasterRecord {
     business_revenue?: string;
 
     // Profile Data
+    user_id: string;
     full_name: string;
     program: string;
     year_level: string; // Batch
@@ -214,6 +216,7 @@ const HomePage: React.FC<HomePageProps> = ({ adminId }) => {
 
   // Modal State
   const [selectedStatusDetail, setSelectedStatusDetail] = useState<string | null>(null);
+  const [showAlignmentModal, setShowAlignmentModal] = useState(false);
 
   // AI Insights State
   const [interpretations, setInterpretations] = useState<CardInterpretations | null>(null);
@@ -344,6 +347,7 @@ const HomePage: React.FC<HomePageProps> = ({ adminId }) => {
                     salary_range: record.salary_range,
                     business_revenue: record.business_revenue,
                     // Profile
+                    user_id: `${survey.respondent_type}-${userProfile.id}`,
                     full_name: fullName,
                     program: normalizeProgram(userProfile.program),
                     year_level: year
@@ -1183,7 +1187,14 @@ const HomePage: React.FC<HomePageProps> = ({ adminId }) => {
                         <div>
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl"><Target size={20}/></div>
-                                <h4 className="font-bold text-slate-800">Program to Career Alignment</h4>
+                                <h4 className="font-bold text-slate-800 flex-grow">Program to Career Alignment</h4>
+                                <button
+                                    onClick={() => setShowAlignmentModal(true)}
+                                    className="p-1.5 bg-slate-100 text-slate-500 hover:bg-indigo-100 hover:text-indigo-600 rounded-lg transition-colors cursor-pointer"
+                                    title="View Alignment Details"
+                                >
+                                    <Info size={18} />
+                                </button>
                             </div>
                             
                             <div className="flex-grow flex items-center justify-center relative min-h-[250px]">
@@ -1402,6 +1413,14 @@ const HomePage: React.FC<HomePageProps> = ({ adminId }) => {
             yearLabel={selectedYear === 'All' ? 'All Batches' : `Batch ${selectedYear}`}
             courseLabel={selectedCourse === 'All' ? 'All Programs' : 'Selected Program'}
             onClose={() => setSelectedStatusDetail(null)}
+        />
+    )}
+
+    {showAlignmentModal && (
+        <AlignmentDetailModal 
+            data={masterData} 
+            onClose={() => setShowAlignmentModal(false)} 
+            interpretation={interpretations?.alignment} 
         />
     )}
     </>

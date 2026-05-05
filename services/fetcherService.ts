@@ -224,7 +224,7 @@ export const saveMinedAlumni = async (alumniList: InternetAlumni[]) => {
         .map(a => ({
             ...a,
             course: normalizeProgram(a.course),
-            graduation_year: normalizeBatchYear(a.graduation_year)
+            graduation_year: normalizeBatchYear(String(a.graduation_year))
         }));
 
     if (newRecords.length === 0) return 0;
