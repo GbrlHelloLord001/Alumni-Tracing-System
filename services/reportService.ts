@@ -152,7 +152,12 @@ export const fetchReportContext = async (config: ReportConfig) => {
                 revenue: emp?.business_revenue || 'N/A',
                 unemployed_reason: emp?.unemployed_reasons || 'N/A',
                 retirement_date: emp?.date_retired || 'N/A',
-                date_hired: emp?.date_hired || 'N/A'
+                date_hired: emp?.date_hired || 'N/A',
+                // Additional fields for extended reports
+                masters_degree: edu?.masters_degree || 'N/A',
+                doctoral_degree: edu?.doctoral_degree || 'N/A',
+                community_active: comms.length > 0,
+                attributes: attr || null
             });
         });
 
@@ -206,11 +211,15 @@ const generateStandardReport = async (config: ReportConfig, context: any): Promi
     // 1. Generate BRIEF Interpretations with AI
     let insights: any = {};
     try {
+        const subCategoryText = config.subCategory && config.subCategory !== 'All' 
+            ? `Sub-Category Focus: ${config.subCategory}` 
+            : '';
+            
         const prompt = `
             Act as a Data Analyst. Provide **very brief** interpretations (1-2 sentences max) for each of the following sections based on the data.
             
             Context: Laguna University Alumni Tracer.
-            Filters: Batch ${config.batch}, Program ${config.program}.
+            Filters: Batch ${config.batch}, Program ${config.program}. ${subCategoryText}
             
             Data:
             ${JSON.stringify(context.stats)}
@@ -257,25 +266,30 @@ const generateStandardReport = async (config: ReportConfig, context: any): Promi
 
     // --- EMPLOYMENT SECTIONS ---
     if (config.type === 'Employment' || config.type === 'All') {
-        
-        // Status
-        sections.push({ title: "Employment Status", type: "text", content: insights.statusAnalysis || "Overview of graduate employment status." });
-        sections.push({ title: "", type: "table", content: formatTable(context.stats.status, "Status") });
+        const sub = config.subCategory || 'All';
+        const showAll = sub === 'All';
 
-        // Industry
-        if (context.stats.industry.length > 0) {
-            sections.push({ title: "Industry Distribution", type: "text", content: insights.industryAnalysis || "Breakdown of industries where graduates are employed." });
+        // 1. Overview / Status
+        // Only show overall status distribution if 'All' or status overview specifically requested
+        if (showAll || sub === 'Status Distribution') {
+            sections.push({ title: "Employment Status Distribution", type: "text", content: insights.statusAnalysis || "Overview of graduate employment status." });
+            sections.push({ title: "", type: "table", content: formatTable(context.stats.status, "Status") });
+        }
+
+        // 2. Industry
+        if ((showAll || sub === 'Employed' || sub === 'Self-employed' || sub === 'Freelancer') && context.stats.industry.length > 0) {
+            sections.push({ title: "Industry Breakdown", type: "text", content: insights.industryAnalysis || "Breakdown of industries where graduates are employed." });
             sections.push({ title: "", type: "table", content: formatTable(context.stats.industry, "Industry") });
         }
 
-        // Alignment
-        if (context.stats.alignment.length > 0) {
+        // 3. Alignment
+        if ((showAll || sub === 'Employed' || sub === 'Alignment Analysis') && context.stats.alignment.length > 0) {
             sections.push({ title: "Job Alignment", type: "text", content: insights.alignmentAnalysis || "Correlation between course and current job." });
             sections.push({ title: "", type: "table", content: formatTable(context.stats.alignment, "Alignment") });
         }
 
-        // Salary
-        if (context.stats.salary.length > 0) {
+        // 4. Salary
+        if ((showAll || sub === 'Employed') && context.stats.salary.length > 0) {
             sections.push({ title: "Salary Ranges", type: "text", content: "Distribution of monthly income." });
             sections.push({ title: "", type: "table", content: formatTable(context.stats.salary, "Income Range") });
         }
@@ -285,63 +299,83 @@ const generateStandardReport = async (config: ReportConfig, context: any): Promi
             const records = context.records;
             
             // 1. Employed
-            const employed = records.filter((r: any) => r.status === 'Employed');
-            if (employed.length > 0) {
-                sections.push({
-                    title: "Detailed List: Employed Graduates",
-                    type: "table",
-                    content: employed.map((r: any) => ({
-                        Name: r.full_name,
-                        Position: r.position,
-                        Company: r.company,
-                        Industry: r.industry,
-                        "Date Hired": r.date_hired
-                    }))
-                });
+            if (showAll || sub === 'Employed') {
+                const employed = records.filter((r: any) => r.status === 'Employed');
+                if (employed.length > 0) {
+                    sections.push({
+                        title: "Detailed List: Employed Graduates",
+                        type: "table",
+                        content: employed.map((r: any) => ({
+                            Name: r.full_name,
+                            Position: r.position,
+                            Company: r.company,
+                            Industry: r.industry,
+                            "Date Hired": r.date_hired
+                        }))
+                    });
+                }
             }
 
             // 2. Self-Employed
-            const selfEmployed = records.filter((r: any) => r.status === 'Self-employed');
-            if (selfEmployed.length > 0) {
-                sections.push({
-                    title: "Detailed List: Entrepreneurs / Self-Employed",
-                    type: "table",
-                    content: selfEmployed.map((r: any) => ({
-                        Name: r.full_name,
-                        Business: r.business_name,
-                        Role: r.position, // position often holds 'Owner'
-                        Revenue: r.revenue,
-                        Industry: r.industry
-                    }))
-                });
+            if (showAll || sub === 'Self-employed' || sub === 'Freelancer') {
+                const selfEmployed = records.filter((r: any) => r.status === 'Self-employed' || r.status === 'Freelancer');
+                if (selfEmployed.length > 0) {
+                    sections.push({
+                        title: "Detailed List: Entrepreneurs / Self-Employed / Freelancers",
+                        type: "table",
+                        content: selfEmployed.map((r: any) => ({
+                            Name: r.full_name,
+                            Business: r.business_name,
+                            Role: r.position, // position often holds 'Owner'
+                            Revenue: r.revenue,
+                            Industry: r.industry
+                        }))
+                    });
+                }
             }
 
             // 3. Unemployed
-            const unemployed = records.filter((r: any) => r.status === 'Unemployed');
-            if (unemployed.length > 0) {
-                sections.push({
-                    title: "Detailed List: Unemployed Graduates",
-                    type: "table",
-                    content: unemployed.map((r: any) => ({
-                        Name: r.full_name,
-                        Reason: r.unemployed_reason,
-                        Batch: r.batch
-                    }))
-                });
+            if (showAll || sub === 'Unemployed' || sub === 'Unemployment Reasons') {
+                const unemployed = records.filter((r: any) => r.status === 'Unemployed');
+                if (unemployed.length > 0) {
+                    // Extract reasons for unemployed
+                    if (sub === 'Unemployment Reasons' && !showAll) {
+                        const reasonCounts: Record<string, number> = {};
+                        unemployed.forEach((r: any) => {
+                            const reason = r.unemployed_reason || 'Unknown';
+                            reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+                        });
+                        const reasonData = Object.entries(reasonCounts).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value);
+                        sections.push({ title: "Unemployment Reasons Breakdown", type: "text", content: "Distribution of reasons cited for unemployment." });
+                        sections.push({ title: "", type: "table", content: formatTable(reasonData, "Reason") });
+                    }
+
+                    sections.push({
+                        title: "Detailed List: Unemployed Graduates",
+                        type: "table",
+                        content: unemployed.map((r: any) => ({
+                            Name: r.full_name,
+                            Reason: r.unemployed_reason,
+                            Batch: r.batch
+                        }))
+                    });
+                }
             }
 
             // 4. Retired
-            const retired = records.filter((r: any) => r.status === 'Retired');
-            if (retired.length > 0) {
-                sections.push({
-                    title: "Detailed List: Retired",
-                    type: "table",
-                    content: retired.map((r: any) => ({
-                        Name: r.full_name,
-                        "Date Retired": r.retirement_date,
-                        "Last Company": r.last_company
-                    }))
-                });
+            if (showAll || sub === 'Retired') {
+                const retired = records.filter((r: any) => r.status === 'Retired');
+                if (retired.length > 0) {
+                    sections.push({
+                        title: "Detailed List: Retired Graduates",
+                        type: "table",
+                        content: retired.map((r: any) => ({
+                            Name: r.full_name,
+                            "Date Retired": r.retirement_date,
+                            "Last Company": r.last_company
+                        }))
+                    });
+                }
             }
         }
     }
@@ -350,12 +384,45 @@ const generateStandardReport = async (config: ReportConfig, context: any): Promi
     if (config.type === 'Education' || config.type === 'All') {
         sections.push({ title: "Educational Attainment", type: "text", content: insights.educationAnalysis || "Highest degree attained by graduates." });
         sections.push({ title: "", type: "table", content: formatTable(context.stats.degrees, "Degree Level") });
+        
+        if (config.formats.includes('Table')) {
+            const records = context.records;
+            const postGrads = records.filter((r: any) => r.masters_degree !== 'N/A' || r.doctoral_degree !== 'N/A');
+            if (postGrads.length > 0) {
+                sections.push({
+                    title: "Detailed List: Post-Graduate Studies",
+                    type: "table",
+                    content: postGrads.map((r: any) => ({
+                        Name: r.full_name,
+                        "Masters Degree": r.masters_degree,
+                        "Doctoral Degree": r.doctoral_degree,
+                        Batch: r.batch
+                    }))
+                });
+            }
+        }
     }
 
     // --- COMMUNITY SECTIONS ---
     if (config.type === 'Community' || config.type === 'All') {
         sections.push({ title: "Community Engagement", type: "text", content: insights.communityAnalysis || "Participation in community organizations." });
         sections.push({ title: "", type: "table", content: formatTable(context.stats.participation, "Status") });
+
+        if (config.formats.includes('Table')) {
+            const records = context.records;
+            const active = records.filter((r: any) => r.community_active);
+            if (active.length > 0) {
+                sections.push({
+                    title: "Detailed List: Active Community Members",
+                    type: "table",
+                    content: active.map((r: any) => ({
+                        Name: r.full_name,
+                        Batch: r.batch,
+                        Program: r.program
+                    }))
+                });
+            }
+        }
     }
 
     // --- SKILLS SECTIONS ---

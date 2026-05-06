@@ -399,6 +399,7 @@ export interface GroupMessage {
 
 export interface ReportConfig {
   type: 'Employment' | 'Education' | 'Community' | 'Skills' | 'All' | 'Custom';
+  subCategory?: string; // e.g., 'Unemployed', 'Employed', 'Retired', etc.
   batch: string; // 'All' or year string
   program: string; // 'All' or program name
   formats: ('Narrative' | 'Table' | 'Graph')[];

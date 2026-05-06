@@ -209,25 +209,75 @@ const UserManagement: React.FC = () => {
     try {
         const [gradsData, studentsData, alumniData] = await Promise.all([
             fetchAll('graduates_import'),
-            fetchAll('students', 'email'),
-            fetchAll('alumni', 'email')
+            fetchAll('students'), 
+            fetchAll('alumni')
         ]);
 
         const activated = new Set<string>();
         studentsData.forEach(s => { if (s.email) activated.add(s.email.toLowerCase()); });
         alumniData.forEach(a => { if (a.email) activated.add(a.email.toLowerCase()); });
 
-        if (gradsData && gradsData.length > 0) {
-            // Sort grads manually since we didn't use an order clause in pagination to avoid complex issues
-            gradsData.sort((a,b) => (a.last_name || '').localeCompare(b.last_name || ''));
+        const gradsMap = new Map<string, boolean>();
+        gradsData.forEach(g => {
+            g.source_table = 'graduates_import';
+            if (g.email) gradsMap.set(g.email.toLowerCase(), true);
+        });
+
+        let allUsers = [...gradsData];
+
+        studentsData.forEach(s => {
+            const lowerEmail = (s.email || '').toLowerCase();
+            if (lowerEmail && !gradsMap.has(lowerEmail)) {
+                allUsers.push({
+                    id: s.id,
+                    first_name: s.first_name,
+                    last_name: s.last_name,
+                    middle_name: s.middle_name,
+                    email: s.email,
+                    course: s.program || 'N/A',
+                    academic_year: s.year_level || 'N/A',
+                    date_graduated: null,
+                    source_table: 'students'
+                });
+                gradsMap.set(lowerEmail, true);
+            }
+        });
+
+        alumniData.forEach(a => {
+            const lowerEmail = (a.email || '').toLowerCase();
+            if (lowerEmail && !gradsMap.has(lowerEmail)) {
+                const parts = (a.full_name || '').split(' ');
+                const lastName = parts.pop() || '';
+                const firstName = parts.join(' ') || '';
+                
+                allUsers.push({
+                    id: a.id,
+                    first_name: firstName,
+                    last_name: lastName,
+                    middle_name: '',
+                    email: a.email,
+                    course: a.course || 'N/A',
+                    academic_year: a.graduation_year ? String(a.graduation_year) : 'N/A',
+                    date_graduated: null,
+                    source_table: 'alumni'
+                });
+                gradsMap.set(lowerEmail, true);
+            }
+        });
+
+        if (allUsers.length > 0) {
+            // Sort users manually since we didn't use an order clause in pagination
+            allUsers.sort((a,b) => (a.last_name || '').localeCompare(b.last_name || ''));
 
             let minYear = Infinity;
             let maxYear = -Infinity;
             const yearsSet = new Set<string>();
 
-            gradsData.forEach(g => {
+            allUsers.forEach(g => {
                 // Determine activated via emails
-                if (!g.is_first_login) activated.add((g.email || '').toLowerCase());
+                if (!g.is_first_login && g.email && !activated.has(g.email.toLowerCase())) {
+                    activated.add((g.email || '').toLowerCase());
+                }
                 
                 // Extract years
                 if (g.academic_year) {
@@ -243,7 +293,7 @@ const UserManagement: React.FC = () => {
                 }
             });
 
-            setGraduates(gradsData);
+            setGraduates(allUsers);
             setActivatedEmails(activated);
             
             let sortedYears = Array.from(yearsSet).sort((a,b) => parseInt(b) - parseInt(a));
@@ -1045,7 +1095,7 @@ const UserManagement: React.FC = () => {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                 <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Source Table</p>
-                                <p className="font-semibold text-slate-700 capitalize">graduates_import</p>
+                                <p className="font-semibold text-slate-700 capitalize">{selectedUser.source_table || 'graduates_import'}</p>
                             </div>
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                 <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Current Status</p>

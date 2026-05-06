@@ -61,7 +61,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ onGenerate, report, o
                     {['Employment', 'Education', 'Community', 'Skills', 'All', 'Custom'].map(type => (
                         <button
                             key={type}
-                            onClick={() => setConfig({ ...config, type: type as any })}
+                            onClick={() => setConfig({ ...config, type: type as any, subCategory: type === 'Employment' ? 'All' : undefined })}
                             className={`py-3 px-4 rounded-xl text-sm font-bold border transition-all text-left ${
                                 config.type === type 
                                 ? 'bg-orange-50 border-orange-200 text-orange-700 shadow-sm' 
@@ -73,6 +73,21 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ onGenerate, report, o
                     ))}
                 </div>
             </div>
+
+            {config.type === 'Employment' && (
+                <div className="animate-fade-in">
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Employment Focus</label>
+                    <select 
+                        value={config.subCategory || 'All'} 
+                        onChange={e => setConfig({...config, subCategory: e.target.value})}
+                        className="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 text-sm font-semibold outline-none focus:border-orange-400"
+                    >
+                        {['All', 'Status Distribution', 'Employed', 'Unemployed', 'Self-employed', 'Retired', 'Freelancer', 'Unemployment Reasons', 'Alignment Analysis'].map(v => (
+                            <option key={v} value={v}>{v}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
