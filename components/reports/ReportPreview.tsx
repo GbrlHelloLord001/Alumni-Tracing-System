@@ -23,9 +23,15 @@ const ReportPreview: React.FC<ReportPreviewProps> = ({ report }) => {
       // 1. Render Text Section
       if (section.type === 'text') {
           return (
-              <div key={index} className="mb-10 text-slate-800 break-inside-avoid page-break-inside-avoid">
-                  {section.title && <h4 className="text-[1.05rem] font-bold text-slate-900 mb-3 uppercase tracking-widest border-b border-slate-200 pb-2">{section.title}</h4>}
-                  <div className="text-[15px] leading-relaxed text-justify whitespace-pre-wrap font-medium text-slate-600 bg-slate-50/50 p-6 rounded-lg border border-slate-100/60 shadow-sm">
+              <div key={index} className="mb-12 text-slate-800 break-inside-avoid page-break-inside-avoid">
+                  {section.title && (
+                      <div className="flex items-center gap-3 mb-5">
+                          <div className="h-4 w-1 bg-indigo-600 rounded-full"></div>
+                          <h4 className="text-[1.05rem] font-bold text-slate-800 uppercase tracking-[0.15em]">{section.title}</h4>
+                      </div>
+                  )}
+                  <div className="text-[14px] leading-7 text-justify whitespace-pre-wrap text-slate-600 bg-slate-50/80 p-7 rounded-xl border border-slate-200/60 shadow-sm relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-400 to-purple-400"></div>
                       {typeof section.content === 'string' ? section.content : JSON.stringify(section.content)}
                   </div>
               </div>
@@ -43,26 +49,29 @@ const ReportPreview: React.FC<ReportPreviewProps> = ({ report }) => {
           const headers = Object.keys(rows[0]);
 
           return (
-              <div key={index} className="mb-14 overflow-hidden break-inside-avoid page-break-inside-avoid">
-                  {section.title && <h4 className="text-[1.05rem] font-bold text-slate-900 mb-4 uppercase tracking-widest border-b border-slate-200 pb-2">{section.title}</h4>}
-                  <div className="overflow-x-auto border border-slate-200/80 rounded-xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] bg-white">
+                              <div key={index} className="mb-14 overflow-hidden break-inside-avoid page-break-inside-avoid">
+                  {section.title && (
+                      <div className="flex items-center gap-3 mb-5">
+                          <div className="h-4 w-1 bg-indigo-600 rounded-full"></div>
+                          <h4 className="text-[1.05rem] font-bold text-slate-800 uppercase tracking-[0.15em]">{section.title}</h4>
+                      </div>
+                  )}
+                  <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200 shadow-sm bg-white">
                     <table className="w-full text-sm text-left">
-                        <thead className="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+                        <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
-                                {headers.map(h => <th key={h} className="px-5 py-4 border-b border-slate-200/80 whitespace-nowrap">{h}</th>)}
+                                {headers.map(h => <th key={h} className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>)}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {rows.map((row: any, i: number) => {
-                                // Check if this is a TOTAL row
                                 const isTotal = Object.values(row).includes('TOTAL');
-                                
                                 return (
                                     <tr key={i} className={`
-                                        ${isTotal ? 'bg-slate-50 font-bold text-slate-900 border-t-2 border-slate-300' : 'hover:bg-slate-50/50 transition-colors'}
+                                        ${isTotal ? 'bg-indigo-50/30 font-bold text-indigo-950 border-t-2 border-indigo-100' : 'hover:bg-slate-50 transition-colors'}
                                     `}>
-                                        {headers.map(h => (
-                                            <td key={h} className="px-5 py-3 text-slate-700 truncate max-w-[350px]">
+                                        {headers.map((h, colIndex) => (
+                                            <td key={h} className={`px-5 py-3.5 text-[13px] ${isTotal && colIndex === 0 ? 'text-indigo-700 tracking-wider' : 'text-slate-600'} ${isTotal ? 'font-bold' : 'font-medium'} truncate max-w-[350px]`}>
                                                 {typeof row[h] === 'object' ? JSON.stringify(row[h]) : row[h]}
                                             </td>
                                         ))}
@@ -167,16 +176,28 @@ const ReportPreview: React.FC<ReportPreviewProps> = ({ report }) => {
                 </div>
 
                 {/* Filters Context Bar */}
-                <div className="flex gap-4 mb-12 px-6 py-4 bg-slate-50 border border-slate-200/60 rounded-xl">
+                <div className="flex gap-4 mb-16 px-8 py-5 bg-gradient-to-r from-slate-50 to-white ring-1 ring-slate-200 rounded-2xl shadow-sm items-center relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500"></div>
                     <div className="flex-1">
-                        <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1">Target Cohort</p>
-                        <p className="text-sm font-semibold text-slate-800">{content.filters.batch === 'All' ? 'All Graduating Batches' : `Batch of ${content.filters.batch}`}</p>
+                        <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1.5 flex items-center gap-2">
+                           Target Cohort
+                        </p>
+                        <p className="text-sm font-bold text-slate-800">{content.filters.batch === 'All' ? 'All Graduating Batches' : `Batch of ${content.filters.batch}`}</p>
                     </div>
-                    <div className="w-[1px] bg-slate-200"></div>
-                    <div className="flex-1">
-                        <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1">Academic Program</p>
-                        <p className="text-sm font-semibold text-slate-800">{content.filters.program}</p>
+                    <div className="w-[1px] h-10 bg-slate-200"></div>
+                    <div className="flex-[2]">
+                        <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 mb-1.5">Academic Program Focus</p>
+                        <p className="text-sm font-bold text-slate-800">{content.filters.program === 'All' ? 'University-Wide (All Programs)' : content.filters.program}</p>
                     </div>
+                    {content.filters.subCategory && content.filters.subCategory !== 'All' && (
+                        <>
+                            <div className="w-[1px] h-10 bg-slate-200"></div>
+                            <div className="flex-1">
+                                <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-indigo-400 mb-1.5">Specific Focus</p>
+                                <p className="text-sm font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded inline-block">{content.filters.subCategory}</p>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Dynamic Sections */}

@@ -426,6 +426,7 @@ export interface ReportContent {
   filters: {
     batch: string;
     program: string;
+    subCategory?: string;
   };
   sections: ReportSection[];
 }

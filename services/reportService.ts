@@ -206,7 +206,7 @@ const insightsSchema: Schema = {
 };
 
 // A. Standard Report (Tables with Totals + Short AI Interpretation)
-const generateStandardReport = async (config: ReportConfig, context: any): Promise<ReportContent> => {
+export const generateStandardReport = async (config: ReportConfig, context: any): Promise<ReportContent> => {
     
     // 1. Generate BRIEF Interpretations with AI
     let insights: any = {};
@@ -440,7 +440,7 @@ const generateStandardReport = async (config: ReportConfig, context: any): Promi
     return {
         title: `Official ${config.type} Report`,
         generatedAt: new Date().toISOString(),
-        filters: { batch: config.batch, program: config.program },
+        filters: { batch: config.batch, program: config.program, subCategory: config.subCategory },
         sections: sections
     };
 };
@@ -492,7 +492,7 @@ const generateCustomReport = async (config: ReportConfig, context: any): Promise
         return {
             title: parsed.title,
             generatedAt: new Date().toISOString(),
-            filters: { batch: config.batch, program: config.program },
+            filters: { batch: config.batch, program: config.program, subCategory: config.subCategory },
             sections: parsed.sections.map((s: any) => ({
                 title: s.title,
                 type: s.type,
