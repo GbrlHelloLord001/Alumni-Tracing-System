@@ -197,6 +197,7 @@ const UserManagement: React.FC = () => {
             const { data, error } = await supabase
                 .from(table)
                 .select(columns)
+                .order('created_at', { ascending: false })
                 .range(from, from + step - 1);
             if (error || !data || data.length === 0) break;
             allData = [...allData, ...data];
@@ -230,6 +231,7 @@ const UserManagement: React.FC = () => {
             if (lowerEmail && !gradsMap.has(lowerEmail)) {
                 allUsers.push({
                     id: s.id,
+                    student_number: s.student_number || '',
                     first_name: s.first_name,
                     last_name: s.last_name,
                     middle_name: s.middle_name,
@@ -237,7 +239,8 @@ const UserManagement: React.FC = () => {
                     course: s.program || 'N/A',
                     academic_year: s.year_level || 'N/A',
                     date_graduated: null,
-                    source_table: 'students'
+                    source_table: 'students',
+                    created_at: s.created_at
                 });
                 gradsMap.set(lowerEmail, true);
             }
@@ -252,6 +255,7 @@ const UserManagement: React.FC = () => {
                 
                 allUsers.push({
                     id: a.id,
+                    student_number: a.student_number || '',
                     first_name: firstName,
                     last_name: lastName,
                     middle_name: '',
@@ -259,15 +263,20 @@ const UserManagement: React.FC = () => {
                     course: a.course || 'N/A',
                     academic_year: a.graduation_year ? String(a.graduation_year) : 'N/A',
                     date_graduated: null,
-                    source_table: 'alumni'
+                    source_table: 'alumni',
+                    created_at: a.created_at
                 });
                 gradsMap.set(lowerEmail, true);
             }
         });
 
         if (allUsers.length > 0) {
-            // Sort users manually since we didn't use an order clause in pagination
-            allUsers.sort((a,b) => (a.last_name || '').localeCompare(b.last_name || ''));
+            // Sort users by created_at descending (newest addition to oldest)
+            allUsers.sort((a,b) => {
+                const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return dateB - dateA;
+            });
 
             let minYear = Infinity;
             let maxYear = -Infinity;
@@ -775,8 +784,9 @@ const UserManagement: React.FC = () => {
                                     <td className="px-6 py-4 text-center text-sm font-medium">
                                         {(() => {
                                             const status = getActivityStatus(grad.updated_at || grad.created_at);
+                                            const activeColor = isActivated ? status.color : 'bg-slate-50 text-slate-500 border-slate-200';
                                             return (
-                                                <div className={`flex items-center justify-center gap-1.5 w-max mx-auto px-3 py-1.5 rounded-lg border ${status.color}`}>
+                                                <div className={`flex items-center justify-center gap-1.5 w-max mx-auto px-3 py-1.5 rounded-lg border flex-shrink-0 ${activeColor}`}>
                                                     <Clock size={14} className="opacity-70" />
                                                     {isActivated ? 'Active' : 'Not Active'}
                                                 </div>

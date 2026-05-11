@@ -441,6 +441,7 @@ const GraduateImport: React.FC = () => {
                         <table className="w-full text-left">
                           <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-wider">
                             <tr>
+                              <th className="px-6 py-4">Student No.</th>
                               <th className="px-6 py-4">Name</th>
                               <th className="px-6 py-4">Course</th>
                               <th className="px-6 py-4">Graduated</th>
@@ -455,6 +456,11 @@ const GraduateImport: React.FC = () => {
                               
                               return (
                                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="text-xs font-mono text-slate-500 font-medium pb-0">
+                                      {item.student_number || 'N/A'}
+                                    </span>
+                                  </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <span className="text-sm font-bold text-slate-700">
                                       {item.first_name} {item.middle_name ? `${item.middle_name.charAt(0)}.` : ''} {item.last_name}
