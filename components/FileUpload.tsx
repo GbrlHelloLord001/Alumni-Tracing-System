@@ -81,7 +81,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
           type="file" 
           className="hidden" 
           accept={acceptCamera ? "image/*" : ".pdf,.jpg,.jpeg,.png"}
-          capture={acceptCamera ? "environment" : undefined}
           onChange={handleChange}
           disabled={isLoading}
         />

@@ -6,6 +6,27 @@ import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabaseClient';
 import { Graduate } from '../types';
 
+const COMMON_COURSES = [
+  'Bachelor of Elementary Education',
+  'Bachelor of Secondary Education major in Biological Science',
+  'Bachelor of Secondary Education major in English',
+  'Bachelor of Secondary Education major in Mathematics',
+  'Bachelor of Secondary Education major in Science',
+  'Bachelor of Science in Accounting Technology',
+  'Bachelor of Science in Mechanical Engineering',
+  'Bachelor of Science in Entrepreneurship',
+  'Bachelor of Arts in Communication',
+  'Bachelor of Science in Computer Science',
+  'Bachelor of Science in Information Technology',
+  'Bachelor of Science in Tourism Management',
+  'Bachelor of Science in Accountancy',
+  'Bachelor of Science in Accounting Information System',
+  'Bachelor of Science in Information Technology - Business Analytics',
+  'Bachelor of Science in Information Technology - System Development',
+  'Bachelor of Science in Computer Science - Data Science',
+  'Diploma in Midwifery'
+];
+
 const GraduateImport: React.FC = () => {
   const [importMode, setImportMode] = useState<'bulk' | 'manual'>('bulk');
   const [file, setFile] = useState<File | null>(null);
@@ -18,6 +39,7 @@ const GraduateImport: React.FC = () => {
 
   // Manual Form State
   const [manualForm, setManualForm] = useState<Graduate>({
+    student_number: '',
     last_name: '',
     first_name: '',
     middle_name: '',
@@ -29,14 +51,14 @@ const GraduateImport: React.FC = () => {
 
   const downloadTemplate = () => {
     const ws_data = [
-      ["Last Name (L-name)", "First Name (F_name)", "Middle Name (M_name)", "Course", "Graduated (Dt-grad)", "Birthdate", "Email Address"],
-      ["DOE", "JOHN", "SMITH", "Bachelor of Science in Information Technology", "July 2, 2024", "10/20/1998", "john.doe@email.com"]
+      ["Student Number", "Last Name (L-name)", "First Name (F_name)", "Middle Name (M_name)", "Course", "Graduated (Dt-grad)", "Birthdate", "Email Address"],
+      ["221-3028", "DOE", "JOHN", "SMITH", "Bachelor of Science in Information Technology", "July 2, 2024", "10/20/1998", "john.doe@email.com"]
     ];
     const ws = XLSX.utils.aoa_to_sheet(ws_data);
     
     // Set column widths
     const wscols = [
-      {wch: 20}, {wch: 20}, {wch: 20}, {wch: 40}, {wch: 20}, {wch: 15}, {wch: 30}
+      {wch: 15}, {wch: 20}, {wch: 20}, {wch: 20}, {wch: 40}, {wch: 20}, {wch: 15}, {wch: 30}
     ];
     ws['!cols'] = wscols;
 
@@ -71,14 +93,15 @@ const GraduateImport: React.FC = () => {
 
         // Skip header row
         const rows = json.slice(1);
-        const graduates: Graduate[] = rows.filter(row => row.length > 0 && row[0]).map(row => ({
-          last_name: String(row[0] || '').trim(),
-          first_name: String(row[1] || '').trim(),
-          middle_name: String(row[2] || '').trim(),
-          course: String(row[3] || '').trim(),
-          date_graduated: String(row[4] || '').trim(),
-          birthdate: String(row[5] || '').trim(),
-          email: String(row[6] || '').trim()
+        const graduates: Graduate[] = rows.filter(row => row.length > 0 && (row[1] || row[7])).map(row => ({
+          student_number: String(row[0] || '').trim(),
+          last_name: String(row[1] || '').trim(),
+          first_name: String(row[2] || '').trim(),
+          middle_name: String(row[3] || '').trim(),
+          course: String(row[4] || '').trim(),
+          date_graduated: String(row[5] || '').trim(),
+          birthdate: String(row[6] || '').trim(),
+          email: String(row[7] || '').trim()
         }));
 
         const missingCore = graduates.filter(g => !g.last_name || !g.first_name || !g.email);
@@ -143,6 +166,7 @@ const GraduateImport: React.FC = () => {
           is_first_login: true
         };
 
+        if (g.student_number) payload.student_number = g.student_number;
         if (g.middle_name) payload.middle_name = g.middle_name;
         if (g.course) payload.course = g.course;
         
@@ -222,6 +246,7 @@ const GraduateImport: React.FC = () => {
         is_first_login: true
       };
       
+      if (manualForm.student_number) dataToInsert.student_number = manualForm.student_number;
       if (manualForm.middle_name) dataToInsert.middle_name = manualForm.middle_name;
       if (manualForm.course) dataToInsert.course = manualForm.course;
       
@@ -239,6 +264,7 @@ const GraduateImport: React.FC = () => {
 
       setSuccess(`Graduate ${manualForm.first_name} ${manualForm.last_name} has been added successfully!`);
       setManualForm({
+        student_number: '',
         last_name: '',
         first_name: '',
         middle_name: '',
@@ -512,6 +538,25 @@ const GraduateImport: React.FC = () => {
                   </AnimatePresence>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Unique Identifier */}
+                    <div className="space-y-4 md:col-span-2">
+                       <label className="text-[10px] uppercase font-black text-slate-400 tracking-widest px-1">University Identifier</label>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1.5 w-1/2">
+                            <label className="text-xs font-bold text-slate-600 ml-1">Student Number</label>
+                            <input 
+                              type="text"
+                              value={manualForm.student_number || ''}
+                              onChange={(e) => setManualForm({...manualForm, student_number: e.target.value})}
+                              className="w-full bg-slate-50/50 border-slate-200 border-2 rounded-2xl px-5 py-3.5 text-sm font-bold text-slate-700 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:scale-[1.01] outline-none transition-all placeholder:text-slate-300 shadow-sm hover:border-slate-300"
+                              placeholder="e.g. 221-3028"
+                              pattern="\d{3}-\d{4}"
+                              title="Format: 000-0000"
+                            />
+                          </div>
+                       </div>
+                    </div>
+
                     {/* Names Section */}
                     <div className="space-y-4 md:col-span-2">
                        <label className="text-[10px] uppercase font-black text-slate-400 tracking-widest px-1">Full Identity</label>
@@ -587,7 +632,13 @@ const GraduateImport: React.FC = () => {
                           onChange={(e) => setManualForm({...manualForm, course: e.target.value})}
                           className="w-full bg-slate-50/50 border-slate-200 border-2 rounded-2xl px-5 py-3.5 text-sm font-bold text-slate-700 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:scale-[1.01] outline-none transition-all placeholder:text-slate-300 shadow-sm hover:border-slate-300"
                           placeholder="Bachelor of Science in..."
+                          list="course-list"
                         />
+                        <datalist id="course-list">
+                          {COMMON_COURSES.map(course => (
+                            <option key={course} value={course} />
+                          ))}
+                        </datalist>
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-600 ml-1">Date Graduated</label>

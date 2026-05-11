@@ -2,6 +2,7 @@
 
 export interface Graduate {
   id?: string;
+  student_number?: string;
   academic_year?: string;
   last_name: string;
   first_name: string;

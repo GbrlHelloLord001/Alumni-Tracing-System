@@ -14,6 +14,22 @@ export const COURSES = [
     "Diploma in Midwifery"
 ];
 
+export const COURSE_ABBREVIATIONS: Record<string, string> = {
+    "Bachelor of Elementary Education (BEED)": "BEED",
+    "Bachelor of Secondary Education (BSED) English": "BSED English",
+    "Bachelor of Secondary Education (BSED) Science": "BSED Science",
+    "Bachelor of Secondary Education (BSED) Math": "BSED Math",
+    "Bachelor of Science in Entrepreneurship (BSE)": "BSE",
+    "Bachelor of Science in Tourism Management (BSTM)": "BSTM",
+    "Bachelor of Science in Accountancy (BSA)": "BSA",
+    "Bachelor of Science in Accountancy Information System (BSAIS)": "BSAIS",
+    "Bachelor of Science in Computer Science (BSCS)": "BSCS",
+    "Bachelor of Science in Information Technology (BSIT)": "BSIT",
+    "Bachelor of Science in Mechanical Engineering (BSME)": "BSME",
+    "Bachelor of Arts in Communication (BAC)": "BAC",
+    "Diploma in Midwifery": "Midwifery"
+};
+
 export function normalizeProgram(program: string | null | undefined): string {
     if (!program) return 'Unknown';
     

@@ -23,7 +23,7 @@ const getActivityStatus = (dateString?: string) => {
     }
 };
 
-import { COURSES, normalizeProgram, normalizeBatchYear } from '../lib/normalization';
+import { COURSES, normalizeProgram, normalizeBatchYear, COURSE_ABBREVIATIONS } from '../lib/normalization';
 
 // --- Custom Dropdown Component ---
 const CustomDropdown = ({ 
@@ -483,14 +483,14 @@ const UserManagement: React.FC = () => {
     const headers = ['ID', 'First Name', 'Middle Name', 'Last Name', 'Email', 'Program', 'Academic Year', 'Status'];
     const rows = filteredGraduates.map(grad => {
          return [
-             grad.id,
+             `"${(grad.student_number || grad.id || '').replace(/"/g, '""')}"`,
              `"${(grad.first_name || '').replace(/"/g, '""')}"`,
              `"${(grad.middle_name || '').replace(/"/g, '""')}"`,
              `"${(grad.last_name || '').replace(/"/g, '""')}"`,
              `"${(grad.email || '').replace(/"/g, '""')}"`,
              `"${(grad.course || '').replace(/"/g, '""')}"`,
              grad.academic_year,
-             activatedEmails.has((grad.email || '').toLowerCase()) ? 'Activated' : 'Pending'
+             activatedEmails.has((grad.email || '').toLowerCase()) ? 'Registered' : 'Unregistered'
          ].join(',');
     });
     const csv = [headers.join(','), ...rows].join('\n');
@@ -504,7 +504,7 @@ const UserManagement: React.FC = () => {
   };
 
   const filteredGraduates = graduates.filter(g => {
-    const searchString = `${g.first_name} ${g.last_name} ${g.email}`.toLowerCase();
+    const searchString = `${g.student_number || ''} ${g.first_name} ${g.last_name} ${g.email}`.toLowerCase();
     const matchesSearch = searchString.includes(searchTerm.toLowerCase());
     
     // Fallbacks for filters
@@ -512,7 +512,8 @@ const UserManagement: React.FC = () => {
     const courseMatchStr = g.course || '';
 
     const matchesYear = selectedYear === 'All' || yearMatchStr.includes(selectedYear);
-    const matchesCourse = selectedCourse === 'All' || normalizeProgram(courseMatchStr) === normalizeProgram(selectedCourse);
+    const normalizedProgram = normalizeProgram(courseMatchStr);
+    const matchesCourse = selectedCourse === 'All' || COURSE_ABBREVIATIONS[normalizedProgram] === selectedCourse || normalizedProgram === selectedCourse;
 
     let matchesActivation = true;
     const isActivated = activatedEmails.has((g.email || '').toLowerCase());
@@ -550,7 +551,7 @@ const UserManagement: React.FC = () => {
                         <CustomDropdown label="Batch" options={availableYears} value={selectedYear} onChange={setSelectedYear} />
                     </div>
                     <div className="w-full sm:w-60">
-                        <CustomDropdown label="Program" options={COURSES} value={selectedCourse} onChange={setSelectedCourse} />
+                        <CustomDropdown label="Program" options={COURSES.map(c => COURSE_ABBREVIATIONS[c] || c)} value={selectedCourse} onChange={setSelectedCourse} />
                     </div>
                 </div>
 
@@ -583,7 +584,7 @@ const UserManagement: React.FC = () => {
             <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 shadow-lg text-white flex items-center justify-between border border-white/20">
                 <div>
                     <p className="text-xs font-bold uppercase tracking-widest mb-1 text-indigo-100">Total Alumni</p>
-                    <h3 className="text-3xl font-black">{totalUsers}</h3>
+                    <h3 className="text-3xl font-black">{activationFilter !== 'All' ? 0 : totalUsers}</h3>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-white/20 text-white flex items-center justify-center backdrop-blur-md shadow-inner border border-white/30">
                     <Users size={24} />
@@ -592,7 +593,7 @@ const UserManagement: React.FC = () => {
             
             <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 shadow-lg text-white flex items-center justify-between border border-white/20">
                 <div>
-                    <p className="text-xs font-bold uppercase tracking-widest mb-1 text-emerald-100">Activated Accounts</p>
+                    <p className="text-xs font-bold uppercase tracking-widest mb-1 text-emerald-100">Registered alumni</p>
                     <h3 className="text-3xl font-black">{activeCount}</h3>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-white/20 text-white flex items-center justify-center backdrop-blur-md shadow-inner border border-white/30">
@@ -602,7 +603,7 @@ const UserManagement: React.FC = () => {
 
             <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 shadow-lg text-white flex items-center justify-between border border-white/20">
                 <div>
-                    <p className="text-xs font-bold uppercase tracking-widest mb-1 text-amber-100">Pending Activation</p>
+                    <p className="text-xs font-bold uppercase tracking-widest mb-1 text-amber-100">Unregistered alumni</p>
                     <h3 className="text-3xl font-black">{pendingCount}</h3>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-white/20 text-white flex items-center justify-center backdrop-blur-md shadow-inner border border-white/30">
@@ -644,7 +645,7 @@ const UserManagement: React.FC = () => {
                             activationFilter === filter ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-700'
                         }`}
                     >
-                        {filter}
+                        {filter === 'Activated' ? 'Registered' : filter === 'Pending' ? 'Unregistered' : 'All'}
                     </button>
                 ))}
             </div>
@@ -687,7 +688,7 @@ const UserManagement: React.FC = () => {
                     <thead className="bg-slate-50/80 backdrop-blur-md border-b border-white/50">
                         <tr>
                             <th className="px-6 py-5 w-12">
-                                <button onClick={handleSelectAll} className="text-slate-400 hover:text-indigo-500 transition-colors">
+                                <button onClick={handleSelectAll} className="text-slate-400 hover:text-indigo-500 transition-colors" title="click to send follow up to all alumni">
                                     {selectedIds.size > 0 && selectedIds.size === filteredGraduates.length ? <CheckSquare size={20} /> : <Square size={20} />}
                                 </button>
                             </th>
@@ -728,7 +729,7 @@ const UserManagement: React.FC = () => {
                                   onClick={() => handleSelectOne(grad.id)}
                                 >
                                     <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                                        <button onClick={() => handleSelectOne(grad.id)} className={`${selectedIds.has(grad.id) ? 'text-indigo-500' : 'text-slate-300 group-hover:text-slate-400'}`}>
+                                        <button onClick={() => handleSelectOne(grad.id)} className={`${selectedIds.has(grad.id) ? 'text-indigo-500' : 'text-slate-300 group-hover:text-slate-400'}`} title="click to send follow up">
                                             {selectedIds.has(grad.id) ? <CheckSquare size={20} /> : <Square size={20} />}
                                         </button>
                                     </td>
@@ -749,7 +750,7 @@ const UserManagement: React.FC = () => {
                                                     </button>
                                                 </div>
                                                 <div className="text-xs font-mono text-slate-500 bg-white/50 px-1.5 py-0.5 rounded border border-white/50 inline-block mt-1">
-                                                    ID: {grad.id.substring(0, 8)}
+                                                    ID: {grad.student_number || grad.id?.substring(0, 8) || 'N/A'}
                                                 </div>
                                             </div>
                                         </div>
@@ -764,10 +765,11 @@ const UserManagement: React.FC = () => {
                                     <td className="px-6 py-4 text-center">
                                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border shadow-sm ${
                                             isActivated 
-                                            ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                            : 'bg-green-50 text-green-700 border-green-200'
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            : 'bg-amber-50 text-amber-700 border-amber-200'
                                         }`}>
-                                            {isActivated ? 'Activated' : 'Pending'}
+                                            {isActivated ? <Check size={12} className="mr-1" /> : <X size={12} className="mr-1" />}
+                                            {isActivated ? 'Registered' : 'Unregistered'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-center text-sm font-medium">
@@ -829,6 +831,18 @@ const UserManagement: React.FC = () => {
                     </div>
                     
                     <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Student Number</label>
+                            <input 
+                                type="text" 
+                                value={editFormData.student_number || ''} 
+                                onChange={e => setEditFormData({...editFormData, student_number: e.target.value})}
+                                className="w-full px-4 py-2.5 bg-white rounded-xl border border-slate-200 text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                placeholder="e.g. 221-3028"
+                                pattern="\d{3}-\d{4}"
+                                title="Format: 000-0000"
+                            />
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">First Name</label>
@@ -861,12 +875,16 @@ const UserManagement: React.FC = () => {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Program / Course</label>
-                                <input 
-                                    type="text" 
+                                <select 
                                     value={editFormData.course || ''} 
                                     onChange={e => setEditFormData({...editFormData, course: e.target.value})}
                                     className="w-full px-4 py-2.5 bg-white rounded-xl border border-slate-200 text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
-                                />
+                                >
+                                    <option value="" disabled>Select a course</option>
+                                    {COURSES.map(c => (
+                                        <option key={c} value={c}>{COURSE_ABBREVIATIONS[c] || c}</option>
+                                    ))}
+                                </select>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Academic Year</label>
@@ -1080,7 +1098,7 @@ const UserManagement: React.FC = () => {
                             <div>
                                 <h3 className="text-xl font-bold text-slate-800">{selectedUser.first_name} {selectedUser.middle_name} {selectedUser.last_name}</h3>
                                 <span className="text-xs font-mono text-slate-500 bg-white/50 px-1.5 py-0.5 rounded border border-white/50 mt-1 inline-block">
-                                    ID: {selectedUser.id?.substring(0, 8)}
+                                    ID: {selectedUser.student_number || selectedUser.id?.substring(0, 8) || 'N/A'}
                                 </span>
                             </div>
                         </div>
