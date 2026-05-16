@@ -9,6 +9,7 @@ import InboxPage from './InboxPage';
 import PauloPage from './PauloPage';
 import SystemAdminPage from './SystemAdminPage';
 import GraduateImport from './GraduateImport';
+import UserManualPage from './UserManualPage';
 import { Admin } from '../types';
 
 interface AdminDashboardProps {
@@ -17,7 +18,7 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout }) => {
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'users' | 'reports' | 'fetcher' | 'inbox' | 'paulo' | 'settings' | 'system' | 'import'>('dashboard');
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'users' | 'reports' | 'fetcher' | 'inbox' | 'paulo' | 'settings' | 'system' | 'import' | 'manual'>('dashboard');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogoutClick = () => {
@@ -161,6 +162,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout }) => {
                         </div>
                         <NavItem id="system" label="System Panel" icon={Shield} />
                         <NavItem id="settings" label="Settings" icon={Settings} />
+                        <NavItem id="manual" label="User Manual" icon={FileText} />
                         
                         <button 
                             onClick={handleLogoutClick}
@@ -184,6 +186,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout }) => {
                 {currentTab === 'fetcher' && <AlumniFetcherPage />}
                 {currentTab === 'reports' && <ReportsPage adminId={admin.id} />}
                 {currentTab === 'system' && <SystemAdminPage />}
+                {currentTab === 'manual' && <UserManualPage />}
                 {currentTab === 'settings' && (
                     <div className="max-w-4xl mx-auto py-8">
                         <div className="bg-white/60 backdrop-blur-xl rounded-[2.5rem] border border-white/80 shadow-xl overflow-hidden">
